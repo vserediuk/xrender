@@ -58,9 +58,8 @@ endforeach()
 
 add_custom_target(Shaders ALL DEPENDS ${ALL_SHADER_OUTPUT_FILES})
 
-add_executable(xrender main.cpp engine.cpp engine.h
-)
+add_executable(xrender main.cpp engine.cpp engine.h)
 
-target_link_libraries(xrender ${Vulkan_LIBRARIES} ${Vulkan_LIB_DIR}/SDL2.lib)
+target_link_libraries(xrender Vulkan::Vulkan ${Vulkan_LIB_DIR}/SDL2.lib)
 
 add_dependencies(xrender Shaders)
