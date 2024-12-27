@@ -1,1 +1,1 @@
-Fast vulkan renderer with mesh batching and bindless desing and dynamic rendering.
+Fast vulkan renderer with mesh batching and bindless design and dynamic rendering.
