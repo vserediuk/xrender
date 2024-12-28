@@ -51,10 +51,21 @@ struct Vertex {
     }
 };
 
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0
 };
 
 const std::vector<const char*> validationLayers = {
@@ -97,7 +108,13 @@ public:
 
     void recreateSwapChain();
 
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, AllocatedBuffer &buffer);
+
     void createVertexBuffer();
+
+    void createIndexBuffer();
+
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     void drawFrame();
 
@@ -105,12 +122,22 @@ public:
 
     void createCommandBuffer();
 
+    void createDescriptorPool();
+
+    void createDescriptorSetLayout();
+
     void recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex);
 
     void createCommandPool();
 
 private:
+    std::vector<VkDescriptorSet> descriptorSets;
+    VkDescriptorPool descriptorPool;
+    std::vector<AllocatedBuffer> uniformBuffers;
+    std::vector<void*> uniformBuffersMapped;
+    VkDescriptorSetLayout descriptorSetLayout;
     VmaAllocator allocator;
+    AllocatedBuffer indexBuffer;
     AllocatedBuffer vertexBuffer;
     uint32_t currentFrame = 0;
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -145,9 +172,15 @@ private:
 
     void createGraphicsPipeline();
 
+    void createDescriptorSets();
+
     void initVulkan();
 
+    void createUniformBuffers();
+
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+
+    void updateUniformBuffer(uint32_t currentImage);
 
     void mainLoop();
 
