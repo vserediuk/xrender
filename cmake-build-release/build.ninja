@@ -59,14 +59,14 @@ build CMakeFiles\xrender.dir\main.cpp.obj.ddi: CXX_SCAN__xrender_Release C$:\Use
   DEP_FILE = CMakeFiles\xrender.dir\main.cpp.obj.ddi.d
   DYNDEP_INTERMEDIATE_FILE = CMakeFiles\xrender.dir\main.cpp.obj.ddi
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
-  INCLUDES = -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
   OBJ_FILE = CMakeFiles\xrender.dir\main.cpp.obj
   PREPROCESSED_OUTPUT_FILE = CMakeFiles\xrender.dir\main.cpp.obj.ddi.i
 
 build CMakeFiles\xrender.dir\main.cpp.obj: CXX_COMPILER__xrender_scanned_Release C$:\Users\Vasyl\Desktop\xrender\main.cpp | CMakeFiles\xrender.dir\main.cpp.obj.modmap || cmake_object_order_depends_target_xrender CMakeFiles\xrender.dir\CXX.dd
   DYNDEP_MODULE_MAP_FILE = CMakeFiles\xrender.dir\main.cpp.obj.modmap
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
-  INCLUDES = -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
   OBJECT_DIR = CMakeFiles\xrender.dir
   OBJECT_FILE_DIR = CMakeFiles\xrender.dir
   TARGET_COMPILE_PDB = CMakeFiles\xrender.dir\
@@ -77,21 +77,39 @@ build CMakeFiles\xrender.dir\engine.cpp.obj.ddi: CXX_SCAN__xrender_Release C$:\U
   DEP_FILE = CMakeFiles\xrender.dir\engine.cpp.obj.ddi.d
   DYNDEP_INTERMEDIATE_FILE = CMakeFiles\xrender.dir\engine.cpp.obj.ddi
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
-  INCLUDES = -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
   OBJ_FILE = CMakeFiles\xrender.dir\engine.cpp.obj
   PREPROCESSED_OUTPUT_FILE = CMakeFiles\xrender.dir\engine.cpp.obj.ddi.i
 
 build CMakeFiles\xrender.dir\engine.cpp.obj: CXX_COMPILER__xrender_scanned_Release C$:\Users\Vasyl\Desktop\xrender\engine.cpp | CMakeFiles\xrender.dir\engine.cpp.obj.modmap || cmake_object_order_depends_target_xrender CMakeFiles\xrender.dir\CXX.dd
   DYNDEP_MODULE_MAP_FILE = CMakeFiles\xrender.dir\engine.cpp.obj.modmap
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
-  INCLUDES = -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
   OBJECT_DIR = CMakeFiles\xrender.dir
   OBJECT_FILE_DIR = CMakeFiles\xrender.dir
   TARGET_COMPILE_PDB = CMakeFiles\xrender.dir\
   TARGET_PDB = xrender.pdb
   dyndep = CMakeFiles/xrender.dir/CXX.dd
 
-build CMakeFiles\xrender.dir\CXX.dd | C$:\Users\Vasyl\Desktop\xrender\cmake-build-release\CMakeFiles\xrender.dir\CXXModules.json CMakeFiles\xrender.dir\main.cpp.obj.modmap CMakeFiles\xrender.dir\engine.cpp.obj.modmap: CXX_DYNDEP__xrender_Release CMakeFiles\xrender.dir\main.cpp.obj.ddi CMakeFiles\xrender.dir\engine.cpp.obj.ddi | C$:\Users\Vasyl\Desktop\xrender\cmake-build-release\CMakeFiles\xrender.dir\CXXDependInfo.json
+build CMakeFiles\xrender.dir\camera.cpp.obj.ddi: CXX_SCAN__xrender_Release C$:\Users\Vasyl\Desktop\xrender\camera.cpp || cmake_object_order_depends_target_xrender
+  DEP_FILE = CMakeFiles\xrender.dir\camera.cpp.obj.ddi.d
+  DYNDEP_INTERMEDIATE_FILE = CMakeFiles\xrender.dir\camera.cpp.obj.ddi
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  OBJ_FILE = CMakeFiles\xrender.dir\camera.cpp.obj
+  PREPROCESSED_OUTPUT_FILE = CMakeFiles\xrender.dir\camera.cpp.obj.ddi.i
+
+build CMakeFiles\xrender.dir\camera.cpp.obj: CXX_COMPILER__xrender_scanned_Release C$:\Users\Vasyl\Desktop\xrender\camera.cpp | CMakeFiles\xrender.dir\camera.cpp.obj.modmap || cmake_object_order_depends_target_xrender CMakeFiles\xrender.dir\CXX.dd
+  DYNDEP_MODULE_MAP_FILE = CMakeFiles\xrender.dir\camera.cpp.obj.modmap
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -std:c++20 -MD
+  INCLUDES = -IC:\Users\Vasyl\Desktop\xrender\third-party -external:IC:\VulkanSDK\1.3.296.0\Include -external:W0
+  OBJECT_DIR = CMakeFiles\xrender.dir
+  OBJECT_FILE_DIR = CMakeFiles\xrender.dir
+  TARGET_COMPILE_PDB = CMakeFiles\xrender.dir\
+  TARGET_PDB = xrender.pdb
+  dyndep = CMakeFiles/xrender.dir/CXX.dd
+
+build CMakeFiles\xrender.dir\CXX.dd | C$:\Users\Vasyl\Desktop\xrender\cmake-build-release\CMakeFiles\xrender.dir\CXXModules.json CMakeFiles\xrender.dir\main.cpp.obj.modmap CMakeFiles\xrender.dir\engine.cpp.obj.modmap CMakeFiles\xrender.dir\camera.cpp.obj.modmap: CXX_DYNDEP__xrender_Release CMakeFiles\xrender.dir\main.cpp.obj.ddi CMakeFiles\xrender.dir\engine.cpp.obj.ddi CMakeFiles\xrender.dir\camera.cpp.obj.ddi | C$:\Users\Vasyl\Desktop\xrender\cmake-build-release\CMakeFiles\xrender.dir\CXXDependInfo.json
 
 
 # =============================================================================
@@ -101,7 +119,7 @@ build CMakeFiles\xrender.dir\CXX.dd | C$:\Users\Vasyl\Desktop\xrender\cmake-buil
 #############################################
 # Link the executable xrender.exe
 
-build xrender.exe: CXX_EXECUTABLE_LINKER__xrender_Release CMakeFiles\xrender.dir\main.cpp.obj CMakeFiles\xrender.dir\engine.cpp.obj | C$:\VulkanSDK\1.3.296.0\Lib\vulkan-1.lib C$:\VulkanSDK\1.3.296.0\Lib\SDL2.lib || Shaders
+build xrender.exe: CXX_EXECUTABLE_LINKER__xrender_Release CMakeFiles\xrender.dir\main.cpp.obj CMakeFiles\xrender.dir\engine.cpp.obj CMakeFiles\xrender.dir\camera.cpp.obj | C$:\VulkanSDK\1.3.296.0\Lib\vulkan-1.lib C$:\VulkanSDK\1.3.296.0\Lib\SDL2.lib || Shaders
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /O2 /Ob2 /DNDEBUG -MD
   LINK_FLAGS = /machine:x64 /INCREMENTAL:NO /subsystem:console
   LINK_LIBRARIES = C:\VulkanSDK\1.3.296.0\Lib\vulkan-1.lib  C:\VulkanSDK\1.3.296.0\Lib\SDL2.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib

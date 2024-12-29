@@ -10,20 +10,29 @@
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 #include <vma/vk_mem_alloc.h>
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+#include "camera.h"
 
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
 struct AllocatedBuffer {
     VkBuffer _buffer;
     VmaAllocation _allocation;
 };
 
+struct AllocatedImage {
+    VkImage image;
+    VmaAllocation allocation;
+};
+
 struct Vertex {
-    glm::vec2 pos;
+    glm::vec3 pos;
     glm::vec3 color;
+    glm::vec2 texCoord;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -34,12 +43,12 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
         attributeDescriptions[1].binding = 0;
@@ -47,25 +56,35 @@ struct Vertex {
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
 
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
         return attributeDescriptions;
     }
+
+    bool operator==(const Vertex& other) const {
+        return pos == other.pos && color == other.color && texCoord == other.texCoord;
+    }
 };
+
+namespace std {
+    template<> struct hash<Vertex> {
+        size_t operator()(Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
+
+
+const std::string MODEL_PATH = "models/Cottage_FREE.obj";
+const std::string TEXTURE_PATH = "textures/Cottage_Dirt_Base_Color.png";
 
 struct UniformBufferObject {
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
-};
-
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-};
-
-const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0
 };
 
 const std::vector<const char*> validationLayers = {
@@ -102,7 +121,27 @@ class VKEngine {
 public:
     void run();
 
+    void loadModel();
+
+    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+                                 VkFormatFeatureFlags features);
+
+    VkFormat findDepthFormat();
+
+    bool hasStencilComponent(VkFormat format);
+
+    void createDepthResources();
+
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                     AllocatedImage &image);
+
+    void createTextureImage();
+
     void cleanupSwapChain();
+
+    VkCommandBuffer beginSingleTimeCommands();
+
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
     void initAllocator();
 
@@ -112,9 +151,13 @@ public:
 
     void createVertexBuffer();
 
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
     void createIndexBuffer();
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     void drawFrame();
 
@@ -131,6 +174,14 @@ public:
     void createCommandPool();
 
 private:
+    Camera camera;
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+    VkImageView depthImageView;
+    AllocatedImage depthImage;
+    VkSampler textureSampler;
+    VkImageView textureImageView;
+    AllocatedImage image;
     std::vector<VkDescriptorSet> descriptorSets;
     VkDescriptorPool descriptorPool;
     std::vector<AllocatedBuffer> uniformBuffers;
@@ -180,7 +231,13 @@ private:
 
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+    void createTextureImageView();
+
     void updateUniformBuffer(uint32_t currentImage);
+
+    void createTextureSampler();
 
     void mainLoop();
 

@@ -3,6 +3,14 @@ project(xrender)
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(MODELS_DIR "${CMAKE_SOURCE_DIR}/models")
+
+file(COPY ${MODELS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+
+set(TEXTURES_DIR "${CMAKE_SOURCE_DIR}/textures")
+
+file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+
 find_package(Vulkan REQUIRED)
 
 if(NOT Vulkan_FOUND)
@@ -15,7 +23,7 @@ if(NOT Vulkan_LIB_DIR)
     message(FATAL_ERROR "Could not determine Vulkan_LIB_DIR")
 endif()
 
-include_directories(${Vulkan_INCLUDE_DIRS})
+include_directories(${Vulkan_INCLUDE_DIRS} third-party)
 
 set(SPIRV_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/shaders_spv")
 set(SHADER_INPUT_DIR "${CMAKE_SOURCE_DIR}/shaders")
@@ -58,7 +66,9 @@ endforeach()
 
 add_custom_target(Shaders ALL DEPENDS ${ALL_SHADER_OUTPUT_FILES})
 
-add_executable(xrender main.cpp engine.cpp engine.h)
+add_executable(xrender main.cpp engine.cpp engine.h
+        camera.cpp
+        camera.h)
 
 target_link_libraries(xrender Vulkan::Vulkan ${Vulkan_LIB_DIR}/SDL2.lib)
 
