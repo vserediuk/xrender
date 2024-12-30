@@ -221,8 +221,8 @@ void VKEngine::recreateSwapChain() {
     vkDeviceWaitIdle(device);
     cleanupSwapChain();
     createSwapChain();
-    CleanupNuklearImages();
-    createNuklearImages();
+    CleanupNuklearResources();
+    createNuklearResources();
     nk_sdl_resize(swapChainExtent.width, swapChainExtent.height);
     createImageViews();
     createDepthResources();
@@ -457,7 +457,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    // Настройка барьера для глубины
     VkImageMemoryBarrier depthMemoryBarrier{};
     depthMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     depthMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -481,7 +480,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
         1, &depthMemoryBarrier
     );
 
-    // Настройка барьера для цвета
     VkImageMemoryBarrier colorMemoryBarrier{};
     colorMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     colorMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -505,7 +503,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
         1, &colorMemoryBarrier
     );
 
-    // Настройка динамического рендеринга
     VkRenderingAttachmentInfoKHR colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
     colorAttachment.imageView = swapChainImageViews[imageIndex];
@@ -534,7 +531,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
 
     vkCmdBeginRendering(buffer, &renderingInfo);
 
-    // Настройка вида и области отсечения
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -549,7 +545,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
     scissor.extent = swapChainExtent;
     vkCmdSetScissor(buffer, 0, 1, &scissor);
 
-    // Привязка графического пайплайна
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
     VkBuffer vertexBuffers[] = {vertexBuffer._buffer};
@@ -572,7 +567,6 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
 
     vkCmdEndRendering(buffer);
 
-    // Настройка барьера для передачи изображения на отображение
     colorMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     colorMemoryBarrier.dstAccessMask = 0;
     colorMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -594,7 +588,7 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
 }
 
 void VKEngine::initNuklear() {
-    createNuklearImages();
+    createNuklearResources();
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     nkContext.ctx = nk_sdl_init(window, device, physicalDevice,
                      indices.graphicsFamily.value(), nkContext.imageView.data(),
@@ -621,7 +615,7 @@ void VKEngine::initNuklear() {
     }
 }
 
-void VKEngine::createNuklearImages() {
+void VKEngine::createNuklearResources() {
     nkContext.image.resize(swapChainImages.size());
     nkContext.imageView.resize(swapChainImages.size());
     for (int i = 0; i < swapChainImages.size(); ++i) {
@@ -635,52 +629,62 @@ void VKEngine::renderGui() {
     nk_colorf bg;
     struct nk_image img;
     img = nk_image_ptr(textureImageView);
-    bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
+
+    bg.r = 0.5f; bg.g = 0.0f; bg.b = 0.8f; bg.a = 1.0f;
+
     nk_context* ctx = nkContext.ctx;
-    if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
-                     NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-                         NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
-            enum { EASY, HARD };
-            static int op = EASY;
-            static int property = 20;
-            nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
 
-            nk_layout_row_dynamic(ctx, 30, 2);
-            if (nk_option_label(ctx, "easy", op == EASY))
-                op = EASY;
-            if (nk_option_label(ctx, "hard", op == HARD))
-                op = HARD;
+    float screen_width = 1920.0f;
+    float screen_height = 1080.0f;
 
+    float window_width = 230.0f;
+    float window_height = 250.0f;
+    float x_pos = (screen_width - window_width) / 2;
+    float y_pos = (screen_height - window_height) / 2;
+
+    if (nk_begin(ctx, "Demo", nk_rect(x_pos, y_pos, window_width, window_height),
+                 NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+                 NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
+        enum { EASY, HARD };
+        static int op = EASY;
+        static int property = 20;
+        nk_layout_row_static(ctx, 30, 80, 1);
+        if (nk_button_label(ctx, "button"))
+            fprintf(stdout, "button pressed\n");
+
+        nk_layout_row_dynamic(ctx, 30, 2);
+        if (nk_option_label(ctx, "easy", op == EASY))
+            op = EASY;
+        if (nk_option_label(ctx, "hard", op == HARD))
+            op = HARD;
+
+        nk_layout_row_dynamic(ctx, 25, 1);
+        nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+
+        nk_layout_row_dynamic(ctx, 20, 1);
+        nk_label(ctx, "background:", NK_TEXT_LEFT);
+        nk_layout_row_dynamic(ctx, 25, 1);
+        if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx), 400))) {
+            nk_layout_row_dynamic(ctx, 120, 1);
+            bg = nk_color_picker(ctx, bg, NK_RGBA);
             nk_layout_row_dynamic(ctx, 25, 1);
-            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-
-            nk_layout_row_dynamic(ctx, 20, 1);
-            nk_label(ctx, "background:", NK_TEXT_LEFT);
-            nk_layout_row_dynamic(ctx, 25, 1);
-            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg),
-                                     nk_vec2(nk_widget_width(ctx), 400))) {
-                nk_layout_row_dynamic(ctx, 120, 1);
-                bg = nk_color_picker(ctx, bg, NK_RGBA);
-                nk_layout_row_dynamic(ctx, 25, 1);
-                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f, 0.005f);
-                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f, 0.005f);
-                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f, 0.005f);
-                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f, 0.005f);
-                nk_combo_end(ctx);
-            }
+            bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f, 0.005f);
+            bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f, 0.005f);
+            bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f, 0.005f);
+            bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f, 0.005f);
+            nk_combo_end(ctx);
         }
-        nk_end(ctx);
+    }
+    nk_end(ctx);
 
-        if (nk_begin(ctx, "Texture", nk_rect(500, 300, 200, 200),
-                     NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-                         NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
-            nk_command_buffer *canvas = nk_window_get_canvas(ctx);
-            struct nk_rect total_space = nk_window_get_content_region(ctx);
-            nk_draw_image(canvas, total_space, &img, nk_white);
-        }
-        nk_end(ctx);
+    if (nk_begin(ctx, "Texture", nk_rect(500, 300, 200, 200),
+                 NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+                 NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
+        nk_command_buffer *canvas = nk_window_get_canvas(ctx);
+        struct nk_rect total_space = nk_window_get_content_region(ctx);
+        nk_draw_image(canvas, total_space, &img, nk_white);
+    }
+    nk_end(ctx);
 }
 
 void VKEngine::drawFrame() {
@@ -748,7 +752,7 @@ void VKEngine::drawFrame() {
     currentFrame = ++frameCount % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VKEngine::CleanupNuklearImages() {
+void VKEngine::CleanupNuklearResources() {
     for (int i = 0; i < swapChainImages.size(); ++i) {
         vmaDestroyImage(allocator, nkContext.image[i].image, nkContext.image[i].allocation);
         vkDestroyImageView(device, nkContext.imageView[i], nullptr);
@@ -1112,7 +1116,7 @@ void VKEngine::cleanup() {
     cleanupSwapChain();
 
     nk_sdl_shutdown();
-    CleanupNuklearImages();
+    CleanupNuklearResources();
 
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
@@ -1537,12 +1541,13 @@ void VKEngine::mainLoop() {
             SDL_Delay(100);
             continue;
         }
-        renderGui();
+
         Uint64 currentTime = SDL_GetPerformanceCounter();
         float deltaTime = (float)(currentTime - lastTime) / SDL_GetPerformanceFrequency();
         lastTime = currentTime;
 
         camera.update(deltaTime);
+        renderGui();
         drawFrame();
         vkDeviceWaitIdle(device);
 

@@ -158,7 +158,7 @@ public:
 
     void drawFrame();
 
-    void CleanupNuklearImages();
+    void CleanupNuklearResources();
 
     void createSyncObjects();
 
@@ -172,7 +172,7 @@ public:
 
     void initNuklear();
 
-    void createNuklearImages();
+    void createNuklearResources();
 
     void renderGui();
 

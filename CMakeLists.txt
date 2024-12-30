@@ -4,11 +4,9 @@ project(xrender)
 set(CMAKE_CXX_STANDARD 20)
 
 set(MODELS_DIR "${CMAKE_SOURCE_DIR}/models")
-
 file(COPY ${MODELS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 
 set(TEXTURES_DIR "${CMAKE_SOURCE_DIR}/textures")
-
 file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 
 find_package(Vulkan REQUIRED)
@@ -35,7 +33,6 @@ message(STATUS "Found shaders: ${SHADER_FILES}")
 
 set(ALL_SHADER_OUTPUT_FILES)
 
-# Try to find the GLSLangValidator program more reliably
 find_program(GLSLANG_VALIDATOR NAMES glslangValidator.exe PATHS ${Vulkan_LIB_DIR}/../Bin)
 
 if(NOT GLSLANG_VALIDATOR)
@@ -49,7 +46,6 @@ foreach(shader ${SHADER_FILES})
     get_filename_component(shader_base_name ${shader_filename} NAME_WE)
     get_filename_component(shader_extension ${shader_filename} EXT)
 
-    # Define the output file path for the shader
     set(output_file "${SPIRV_OUTPUT_DIR}/${shader_base_name}${shader_extension}.spv")
     message(STATUS "Compiling shader: ${shader} to ${output_file}")
 
@@ -60,11 +56,17 @@ foreach(shader ${SHADER_FILES})
             COMMENT "Compiling shader ${shader} to SPIR-V"
     )
 
-
     list(APPEND ALL_SHADER_OUTPUT_FILES ${output_file})
 endforeach()
 
 add_custom_target(Shaders ALL DEPENDS ${ALL_SHADER_OUTPUT_FILES})
+
+add_custom_command(
+    TARGET Shaders POST_BUILD
+    COMMAND cmd.exe /C "cd /D ${CMAKE_SOURCE_DIR} && py generate_shaders_header.py"
+    COMMENT "Running generate_shaders_header.py after shader compilation"
+)
+
 
 add_executable(xrender main.cpp engine.cpp engine.h
         camera.cpp
