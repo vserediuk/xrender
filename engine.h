@@ -4,19 +4,10 @@
 
 #ifndef ENGINE_H
 #define ENGINE_H
-#include <array>
-#include <optional>
-#include <vector>
-#include <SDL2/SDL_video.h>
-#include <SDL2/SDL_vulkan.h>
-#include <vulkan/vulkan_core.h>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtx/hash.hpp>
-#include <vma/vk_mem_alloc.h>
 
-#include "camera.h"
+#include "pch.h"
 
+struct nk_context;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 struct AllocatedBuffer {
@@ -27,6 +18,12 @@ struct AllocatedBuffer {
 struct AllocatedImage {
     VkImage image;
     VmaAllocation allocation;
+};
+
+struct NKContext {
+    std::vector<AllocatedImage> image;
+    nk_context* ctx;
+    std::vector<VkImageView> imageView;
 };
 
 struct Vertex {
@@ -78,8 +75,8 @@ namespace std {
 }
 
 
-const std::string MODEL_PATH = "models/Cottage_FREE.obj";
-const std::string TEXTURE_PATH = "textures/Cottage_Dirt_Base_Color.png";
+const std::string MODEL_PATH = "models/muffin.obj";
+const std::string TEXTURE_PATH = "textures/muffin.png";
 
 struct UniformBufferObject {
     glm::mat4 model;
@@ -161,6 +158,8 @@ public:
 
     void drawFrame();
 
+    void CleanupNuklearImages();
+
     void createSyncObjects();
 
     void createCommandBuffer();
@@ -171,9 +170,19 @@ public:
 
     void recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex);
 
+    void initNuklear();
+
+    void createNuklearImages();
+
+    void renderGui();
+
+    void drawGui();
+
     void createCommandPool();
 
 private:
+    NKContext nkContext;
+    int frameCount = 0;
     Camera camera;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;

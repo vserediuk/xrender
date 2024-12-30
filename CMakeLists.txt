@@ -70,6 +70,8 @@ add_executable(xrender main.cpp engine.cpp engine.h
         camera.cpp
         camera.h)
 
+target_precompile_headers(xrender PRIVATE pch.h)
+
 target_link_libraries(xrender Vulkan::Vulkan ${Vulkan_LIB_DIR}/SDL2.lib)
 
 add_dependencies(xrender Shaders)

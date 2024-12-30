@@ -1,31 +1,37 @@
 //
 // Created by Vasyl on 26.12.2024.
 //
+
 #define VMA_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include "engine.h"
-#include <algorithm>
-#include <chrono>
-#include <vulkan/vulkan.h>
-#include <iostream>
-#include <set>
-#include <thread>
-#include <vector>
-#include "SDL2/SDL.h"
-#include "shaders.h"
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "stb_image.h"
 #define TINYOBJLOADER_IMPLEMENTATION
+#define NK_IMPLEMENTATION
+#define NK_SDL_VULKAN_IMPLEMENTATION
+
+#include "stb_image.h"
 #include <tiny_obj_loader.h>
-#include <unordered_map>
+#include <vma/vk_mem_alloc.h>
+
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_KEYSTATE_BASED_INPUT
+#include <nuklear.h>
+#include "nuklear_sdl_vulkan.h"
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
+
+#include "pch.h"
 
 void VKEngine::run() {
     loadModel();
     initWindow();
     initVulkan();
+    initNuklear();
     mainLoop();
     cleanup();
 }
@@ -80,7 +86,8 @@ VkFormat VKEngine::findSupportedFormat(const std::vector<VkFormat>& candidates, 
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             return format;
-        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+        }
+        if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
             return format;
         }
     }
@@ -214,6 +221,9 @@ void VKEngine::recreateSwapChain() {
     vkDeviceWaitIdle(device);
     cleanupSwapChain();
     createSwapChain();
+    CleanupNuklearImages();
+    createNuklearImages();
+    nk_sdl_resize(swapChainExtent.width, swapChainExtent.height);
     createImageViews();
     createDepthResources();
 }
@@ -583,6 +593,95 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
     }
 }
 
+void VKEngine::initNuklear() {
+    createNuklearImages();
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    nkContext.ctx = nk_sdl_init(window, device, physicalDevice,
+                     indices.graphicsFamily.value(), nkContext.imageView.data(),
+                     swapChainImageViews.size(), swapChainImageFormat,
+                     NK_SDL_DEFAULT, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+    {
+        struct nk_font_atlas *atlas;
+        nk_sdl_font_stash_begin(&atlas);
+        /*struct nk_font *droid = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/DroidSans.ttf", 14, 0);*/
+        /*struct nk_font *roboto = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/Roboto-Regular.ttf", 14, 0);*/
+        /*struct nk_font *future = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/kenvector_future_thin.ttf", 13, 0);*/
+        /*struct nk_font *clean = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/ProggyClean.ttf", 12, 0);*/
+        /*struct nk_font *tiny = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/ProggyTiny.ttf", 10, 0);*/
+        /*struct nk_font *cousine = nk_font_atlas_add_from_file(atlas,
+         * "../../../extra_font/Cousine-Regular.ttf", 13, 0);*/
+        nk_sdl_font_stash_end(graphicsQueue);
+        /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
+        /*nk_style_set_font(ctx, &droid->handle);*/
+    }
+}
+
+void VKEngine::createNuklearImages() {
+    nkContext.image.resize(swapChainImages.size());
+    nkContext.imageView.resize(swapChainImages.size());
+    for (int i = 0; i < swapChainImages.size(); ++i) {
+         createImage(swapChainExtent.width, swapChainExtent.height, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL,
+             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,nkContext.image[i]);
+        nkContext.imageView[i] = createImageView(nkContext.image[i].image, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
+}
+
+void VKEngine::renderGui() {
+    nk_colorf bg;
+    struct nk_image img;
+    img = nk_image_ptr(textureImageView);
+    bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
+    nk_context* ctx = nkContext.ctx;
+    if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+                     NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+                         NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
+            enum { EASY, HARD };
+            static int op = EASY;
+            static int property = 20;
+            nk_layout_row_static(ctx, 30, 80, 1);
+            if (nk_button_label(ctx, "button"))
+                fprintf(stdout, "button pressed\n");
+
+            nk_layout_row_dynamic(ctx, 30, 2);
+            if (nk_option_label(ctx, "easy", op == EASY))
+                op = EASY;
+            if (nk_option_label(ctx, "hard", op == HARD))
+                op = HARD;
+
+            nk_layout_row_dynamic(ctx, 25, 1);
+            nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+
+            nk_layout_row_dynamic(ctx, 20, 1);
+            nk_label(ctx, "background:", NK_TEXT_LEFT);
+            nk_layout_row_dynamic(ctx, 25, 1);
+            if (nk_combo_begin_color(ctx, nk_rgb_cf(bg),
+                                     nk_vec2(nk_widget_width(ctx), 400))) {
+                nk_layout_row_dynamic(ctx, 120, 1);
+                bg = nk_color_picker(ctx, bg, NK_RGBA);
+                nk_layout_row_dynamic(ctx, 25, 1);
+                bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f, 0.005f);
+                bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f, 0.005f);
+                bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f, 0.005f);
+                bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f, 0.005f);
+                nk_combo_end(ctx);
+            }
+        }
+        nk_end(ctx);
+
+        if (nk_begin(ctx, "Texture", nk_rect(500, 300, 200, 200),
+                     NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+                         NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
+            nk_command_buffer *canvas = nk_window_get_canvas(ctx);
+            struct nk_rect total_space = nk_window_get_content_region(ctx);
+            nk_draw_image(canvas, total_space, &img, nk_white);
+        }
+        nk_end(ctx);
+}
 
 void VKEngine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -600,6 +699,9 @@ void VKEngine::drawFrame() {
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
     vkResetCommandBuffer(commandBuffers[currentFrame],  0);
 
+    VkSemaphore nk_semaphore = nk_sdl_render(graphicsQueue, imageIndex,
+                                    imageAvailableSemaphores[currentFrame], NK_ANTI_ALIASING_ON);
+
     updateUniformBuffer(currentFrame);
 
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -607,7 +709,7 @@ void VKEngine::drawFrame() {
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+    VkSemaphore waitSemaphores[] = {nk_semaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -643,7 +745,14 @@ void VKEngine::drawFrame() {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = ++frameCount % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VKEngine::CleanupNuklearImages() {
+    for (int i = 0; i < swapChainImages.size(); ++i) {
+        vmaDestroyImage(allocator, nkContext.image[i].image, nkContext.image[i].allocation);
+        vkDestroyImageView(device, nkContext.imageView[i], nullptr);
+    }
 }
 
 
@@ -663,7 +772,7 @@ void VKEngine::createCommandPool() {
 void VKEngine::initWindow() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     SDL_Vulkan_LoadLibrary(nullptr);
-    window = SDL_CreateWindow("XRender Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("XRender Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 }
 
 void VKEngine::setupDebugMessenger() {
@@ -940,6 +1049,7 @@ VkImageView VKEngine::createImageView(VkImage image, VkFormat format, VkImageAsp
     viewInfo.subresourceRange.layerCount = 1;
 
     VkImageView imageView;
+
     if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image view!");
     }
@@ -953,7 +1063,7 @@ void VKEngine::createTextureImageView() {
 
 void VKEngine::updateUniformBuffer(uint32_t currentImage) {
     UniformBufferObject ubo{};
-    ubo.model = glm::mat4(1.0f);
+    ubo.model = glm::mat4(10.0f);
 
     ubo.view = camera.getViewMatrix();
     ubo.proj = camera.getProjectionMatrix();
@@ -1001,13 +1111,11 @@ void VKEngine::cleanup() {
     vkDeviceWaitIdle(device);
     cleanupSwapChain();
 
+    nk_sdl_shutdown();
+    CleanupNuklearImages();
+
     vkDestroyPipeline(device, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vmaUnmapMemory(allocator, uniformBuffers[i]._allocation);
-        vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
-    }
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
@@ -1019,21 +1127,19 @@ void VKEngine::cleanup() {
     vmaDestroyImage(allocator, depthImage.image, depthImage.allocation);
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
     vmaDestroyBuffer(allocator, indexBuffer._buffer, indexBuffer._allocation);
-
     vmaDestroyBuffer(allocator, vertexBuffer._buffer, vertexBuffer._allocation);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
+        vmaUnmapMemory(allocator, uniformBuffers[i]._allocation);
+        vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
     }
 
-    vkDestroyCommandPool(device, commandPool, nullptr);
-
     vmaDestroyAllocator(allocator);
-
+    vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyDevice(device, nullptr);
 
     if (enableValidationLayers) {
@@ -1041,9 +1147,7 @@ void VKEngine::cleanup() {
     }
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
-
-    vkDestroyInstance(instance, nullptr);
-
+    vkDestroyInstance(instance, nullptr);;
     SDL_DestroyWindow(window);
     SDL_Vulkan_UnloadLibrary();
     SDL_Quit();
@@ -1397,7 +1501,15 @@ void VKEngine::mainLoop() {
     SDL_Event event;
     bool stop_rendering = false;
     bool quit = false;
+
+    Uint64 lastTime = SDL_GetPerformanceCounter();
+    Uint64 fpsTimer = SDL_GetPerformanceCounter();
+    float fps = 0.0f;
+
     while (!quit) {
+
+        nk_input_begin(nkContext.ctx);
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
                 quit = true;
@@ -1416,15 +1528,30 @@ void VKEngine::mainLoop() {
             }
 
             camera.processInput(event);
+            nk_sdl_handle_event(&event);
         }
+
+        nk_input_end(nkContext.ctx);
+
         if (stop_rendering) {
-            // throttle the speed to avoid the endless spinning
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            SDL_Delay(100);
             continue;
         }
-        float deltaTime = 1.0f / 60.0f;  // Replace with actual delta time
+        renderGui();
+        Uint64 currentTime = SDL_GetPerformanceCounter();
+        float deltaTime = (float)(currentTime - lastTime) / SDL_GetPerformanceFrequency();
+        lastTime = currentTime;
+
         camera.update(deltaTime);
         drawFrame();
         vkDeviceWaitIdle(device);
+
+        if ((float)(currentTime - fpsTimer) / SDL_GetPerformanceFrequency() >= 1.0f) {
+            fps = frameCount / ((float)(currentTime - fpsTimer) / SDL_GetPerformanceFrequency());
+            frameCount = 0;
+            fpsTimer = currentTime;
+
+            std::cout << "FPS: " << fps << std::endl;
+        }
     }
 }
