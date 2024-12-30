@@ -598,7 +598,7 @@ void VKEngine::initNuklear() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     nkContext.ctx = nk_sdl_init(window, device, physicalDevice,
                      indices.graphicsFamily.value(), nkContext.imageView.data(),
-                     swapChainImageViews.size(), swapChainImageFormat,
+                     nkContext.imageView.size(), swapChainImageFormat,
                      NK_SDL_DEFAULT, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
     {
         struct nk_font_atlas *atlas;
