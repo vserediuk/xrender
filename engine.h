@@ -127,6 +127,8 @@ public:
 
     bool hasStencilComponent(VkFormat format);
 
+    void cleanupDepthResources();
+
     void createDepthResources();
 
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,

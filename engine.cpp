@@ -107,6 +107,11 @@ bool VKEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+void VKEngine::cleanupDepthResources() {
+    vmaDestroyImage(allocator, depthImage.image, depthImage.allocation);
+    vkDestroyImageView(device, depthImageView, nullptr);
+}
+
 void VKEngine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
     createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImage);
@@ -221,11 +226,12 @@ void VKEngine::recreateSwapChain() {
     vkDeviceWaitIdle(device);
     cleanupSwapChain();
     createSwapChain();
+    createImageViews();
+    cleanupDepthResources();
+    createDepthResources();
     CleanupNuklearResources();
     createNuklearResources();
     nk_sdl_resize(swapChainExtent.width, swapChainExtent.height);
-    createImageViews();
-    createDepthResources();
 }
 
 
@@ -634,11 +640,11 @@ void VKEngine::renderGui() {
 
     nk_context* ctx = nkContext.ctx;
 
-    float screen_width = 1920.0f;
-    float screen_height = 1080.0f;
+    float screen_width = swapChainExtent.width;
+    float screen_height = swapChainExtent.height;
 
-    float window_width = 230.0f;
-    float window_height = 250.0f;
+    float window_width = 200.0f;
+    float window_height = 100.0f;
     float x_pos = (screen_width - window_width) / 2;
     float y_pos = (screen_height - window_height) / 2;
 
@@ -1125,10 +1131,10 @@ void VKEngine::cleanup() {
 
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroyImageView(device, textureImageView, nullptr);
-    vkDestroyImageView(device, depthImageView, nullptr);
 
     vmaDestroyImage(allocator, image.image, image.allocation);
-    vmaDestroyImage(allocator, depthImage.image, depthImage.allocation);
+
+    cleanupDepthResources();
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vmaDestroyBuffer(allocator, indexBuffer._buffer, indexBuffer._allocation);
@@ -1174,7 +1180,7 @@ void VKEngine::createVulkanInstance() {
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3; // Минимум Vulkan 1.3
+    appInfo.apiVersion = VK_API_VERSION_1_3;
 
     auto extensions = getRequiredExtensions();
     VkInstanceCreateInfo createInfo{};
