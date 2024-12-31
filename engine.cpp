@@ -5,8 +5,6 @@
 #define VMA_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION
-#define NK_IMPLEMENTATION
-#define NK_SDL_VULKAN_IMPLEMENTATION
 
 #include "stb_image.h"
 #include <tiny_obj_loader.h>
@@ -20,6 +18,8 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_KEYSTATE_BASED_INPUT
+#define NK_IMPLEMENTATION
+#define NK_SDL_VULKAN_IMPLEMENTATION
 #include <nuklear.h>
 #include "nuklear_sdl_vulkan.h"
 #define MAX_VERTEX_BUFFER 512 * 1024
@@ -516,7 +516,7 @@ void VKEngine::recordCommandBuffer(VkCommandBuffer buffer, uint32_t imageIndex) 
     colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE_KHR;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    colorAttachment.clearValue = {0, 0, 0, 1};
 
     VkRenderingAttachmentInfoKHR depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
@@ -631,10 +631,8 @@ void VKEngine::createNuklearResources() {
     }
 }
 
-void VKEngine::renderGui() {
+void VKEngine::drawGui() {
     nk_colorf bg;
-    struct nk_image img;
-    img = nk_image_ptr(textureImageView);
 
     bg.r = 0.5f; bg.g = 0.0f; bg.b = 0.8f; bg.a = 1.0f;
 
@@ -680,15 +678,6 @@ void VKEngine::renderGui() {
             bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f, 0.005f);
             nk_combo_end(ctx);
         }
-    }
-    nk_end(ctx);
-
-    if (nk_begin(ctx, "Texture", nk_rect(500, 300, 200, 200),
-                 NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-                 NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE)) {
-        nk_command_buffer *canvas = nk_window_get_canvas(ctx);
-        struct nk_rect total_space = nk_window_get_content_region(ctx);
-        nk_draw_image(canvas, total_space, &img, nk_white);
     }
     nk_end(ctx);
 }
@@ -977,7 +966,7 @@ void VKEngine::createDescriptorSets() {
         descriptorWrites[1].descriptorCount = 1;
         descriptorWrites[1].pImageInfo = &imageInfo;
 
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
     }
 }
 
@@ -1553,7 +1542,7 @@ void VKEngine::mainLoop() {
         lastTime = currentTime;
 
         camera.update(deltaTime);
-        renderGui();
+        drawGui();
         drawFrame();
         vkDeviceWaitIdle(device);
 

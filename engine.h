@@ -20,6 +20,8 @@ struct AllocatedImage {
     VmaAllocation allocation;
 };
 
+struct nk_colorf;
+
 struct NKContext {
     std::vector<AllocatedImage> image;
     nk_context* ctx;
@@ -84,7 +86,7 @@ struct UniformBufferObject {
     glm::mat4 proj;
 };
 
-const std::vector<const char*> validationLayers = {
+const std::vector validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
@@ -175,8 +177,6 @@ public:
     void initNuklear();
 
     void createNuklearResources();
-
-    void renderGui();
 
     void drawGui();
 
